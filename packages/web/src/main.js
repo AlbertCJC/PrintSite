@@ -1,4 +1,5 @@
 import { renderCustomerPage } from './customer.js'
+import { renderAdminPage } from './admin.js'
 
 const app = document.getElementById('app')
 
@@ -7,7 +8,7 @@ function router() {
   app.innerHTML = ''
 
   if (path === '/admin' || path === '/admin/') {
-    app.innerHTML = '<h1>Admin page — coming soon</h1>'
+    renderAdminPage(app)
   } else {
     renderCustomerPage(app)
   }
