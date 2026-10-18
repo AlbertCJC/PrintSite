@@ -1,36 +1,36 @@
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { PDFDocument } from 'pdf-lib'
 
-const r2 = new S3Client({
-  endpoint: process.env.R2_ENDPOINT,
-  region: 'auto',
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-})
+const SUPABASE_URL = process.env.SUPABASE_URL!
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const BUCKET = process.env.SUPABASE_BUCKET_NAME!
 
-const BUCKET = process.env.R2_BUCKET_NAME!
+const headers = {
+  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+  apikey: SERVICE_ROLE_KEY,
+}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const { id } = await req.json() as { id: string }
+  const { id } = (await req.json()) as { id: string }
 
   if (!id) {
     return new Response('Missing id', { status: 400 })
   }
 
-  // Fetch original image from R2
-  const getRes = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: id }))
-  const stream = getRes.Body as any
-  const chunks: Uint8Array[] = []
-  for await (const chunk of stream) {
-    chunks.push(chunk)
+  // Fetch original image from Supabase Storage
+  const getRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${id}`, {
+    headers,
+  })
+
+  if (!getRes.ok) {
+    const text = await getRes.text()
+    return new Response(text || `Fetch failed (${getRes.status})`, { status: getRes.status })
   }
-  const imageBytes = Buffer.concat(chunks.map((c: any) => Buffer.from(c)))
+
+  const imageBytes = new Uint8Array(await getRes.arrayBuffer())
 
   // Convert image to PDF using pdf-lib
   const pdfDoc = await PDFDocument.create()
@@ -49,15 +49,22 @@ export default async function handler(req: Request): Promise<Response> {
   const pdfBytes = await pdfDoc.save()
   const pdfId = `${id}.pdf`
 
-  await r2.send(new PutObjectCommand({
-    Bucket: BUCKET,
-    Key: pdfId,
-    Body: pdfBytes,
-    ContentType: 'application/pdf',
-  }))
+  const putRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${pdfId}`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/pdf',
+    },
+    body: pdfBytes,
+  })
+
+  if (!putRes.ok) {
+    const text = await putRes.text()
+    return new Response(text || `Convert failed (${putRes.status})`, { status: putRes.status })
+  }
 
   return Response.json({
     id: pdfId,
-    pdfUrl: `${process.env.R2_ENDPOINT}/${BUCKET}/${pdfId}`,
+    pdfUrl: `/api/admin/download/${encodeURIComponent(pdfId)}`,
   })
 }

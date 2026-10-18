@@ -65,7 +65,7 @@ export async function convertToPDF(id) {
  * @returns {Promise<void>}
  */
 export async function deleteUpload(id) {
-  const res = await fetch(`${API_BASE}/api/admin/delete/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/delete/${encodeURIComponent(id)}`, {
     method: 'DELETE'
   })
 

@@ -42,7 +42,7 @@ export function renderAdminPage(container) {
           <td style="border-bottom: 1px solid #eee; padding: 0.5rem;">
             ${isImage
               ? `<button class="convert-btn" data-id="${upload.id}">Convert to PDF</button>`
-              : `<a href="/api/admin/download/${upload.id}" target="_blank">Download</a>`}
+              : `<a href="/api/admin/download/${encodeURIComponent(upload.id)}" target="_blank">Download</a>`}
             <button class="print-btn" data-id="${upload.id}" ${!isImage ? 'disabled' : ''}>Print</button>
             <button class="delete-btn" data-id="${upload.id}">Delete</button>
           </td>
@@ -71,7 +71,7 @@ export function renderAdminPage(container) {
   }
 
   async function handlePrint(id) {
-    const win = window.open(`/api/admin/download/${id}`, '_blank')
+    const win = window.open(`/api/admin/download/${encodeURIComponent(id)}`, '_blank')
     win?.focus()
     setTimeout(() => win?.print(), 1000)
   }

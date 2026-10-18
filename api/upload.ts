@@ -1,16 +1,13 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
 
-const r2 = new S3Client({
-  endpoint: process.env.R2_ENDPOINT,
-  region: 'auto',
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-})
+const SUPABASE_URL = process.env.SUPABASE_URL!
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const BUCKET = process.env.SUPABASE_BUCKET_NAME!
 
-const BUCKET = process.env.R2_BUCKET_NAME!
+const headers = {
+  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+  apikey: SERVICE_ROLE_KEY,
+}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -25,17 +22,25 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const id = uuidv4()
+  const path = `${id}__${file.name}`
   const arrayBuffer = await file.arrayBuffer()
 
-  await r2.send(new PutObjectCommand({
-    Bucket: BUCKET,
-    Key: id,
-    Body: arrayBuffer,
-    ContentType: file.type,
-  }))
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': file.type,
+    },
+    body: arrayBuffer,
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    return new Response(text || `Upload failed (${res.status})`, { status: res.status })
+  }
 
   return Response.json({
-    id,
+    id: path,
     filename: file.name,
     size: file.size,
     type: file.type,
