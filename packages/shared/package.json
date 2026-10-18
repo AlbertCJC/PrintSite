@@ -1,0 +1,5 @@
+{
+  "name": "@printsite/shared",
+  "version": "0.1.0",
+  "main": "src/types.js"
+}
