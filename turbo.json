@@ -1,0 +1,9 @@
+{
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["packages/web/dist/**"]
+    },
+    "dev": {}
+  }
+}
