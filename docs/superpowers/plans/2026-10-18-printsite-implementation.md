@@ -244,7 +244,6 @@ export default defineConfig({
 
 ```javascript
 import { renderCustomerPage } from './customer.js'
-import { renderAdminPage } from './admin.js'
 
 const app = document.getElementById('app')
 
@@ -253,7 +252,7 @@ function router() {
   app.innerHTML = ''
 
   if (path === '/admin' || path === '/admin/') {
-    renderAdminPage(app)
+    app.innerHTML = '<h1>Admin page — coming soon</h1>'
   } else {
     renderCustomerPage(app)
   }
@@ -752,10 +751,32 @@ function escapeHtml(text: string): string {
 }
 ```
 
-- [ ] **Step 2: Import admin.js in main.js**
+- [ ] **Step 2: Import admin.js in main.js and update router**
 
 Modify: `packages/web/src/main.js`
-- Add `import { renderAdminPage } from './admin.js'` (already done in Task 3)
+
+Replace the import and router:
+
+```javascript
+import { renderCustomerPage } from './customer.js'
+import { renderAdminPage } from './admin.js'
+
+const app = document.getElementById('app')
+
+function router() {
+  const path = window.location.pathname
+  app.innerHTML = ''
+
+  if (path === '/admin' || path === '/admin/') {
+    renderAdminPage(app)
+  } else {
+    renderCustomerPage(app)
+  }
+}
+
+window.addEventListener('popstate', router)
+router()
+```
 
 - [ ] **Step 3: Run Vite dev server and verify admin page**
 
