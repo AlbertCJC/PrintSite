@@ -2,7 +2,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["packages/web/dist/**"]
+      "outputs": ["packages/dist/**"]
     },
     "dev": {}
   }
