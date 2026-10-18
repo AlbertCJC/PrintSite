@@ -1,4 +1,7 @@
+import { mergeImagesSideBySide, removePdfPages } from './editing.js'
+
 let localFile = null
+let selectedFiles = []
 
 export function getLocalFile() {
   return localFile
@@ -8,7 +11,7 @@ export function renderCustomerPage(container) {
   container.innerHTML = `
     <div class="customer-page">
       <h1>Upload File</h1>
-      <input type="file" id="file-picker" />
+      <input type="file" id="file-picker" multiple />
       <div id="file-info" style="margin: 1rem 0; display: none;"></div>
       <div id="edit-section" style="margin: 1rem 0; display: none;">
         <h2>Edit (optional)</h2>
@@ -22,19 +25,78 @@ export function renderCustomerPage(container) {
   const filePicker = container.querySelector('#file-picker')
   const fileInfo = container.querySelector('#file-info')
   const editSection = container.querySelector('#edit-section')
+  const editControls = container.querySelector('#edit-controls')
   const uploadBtn = container.querySelector('#upload-btn')
   const message = container.querySelector('#message')
 
-  filePicker.addEventListener('change', (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  function renderEditControls() {
+    editControls.innerHTML = ''
+    const imageFiles = selectedFiles.filter(f => f.type.startsWith('image/'))
+    const pdfFiles = selectedFiles.filter(f => f.type === 'application/pdf')
 
-    localFile = file
-    fileInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+    if (imageFiles.length >= 2) {
+      const btn = document.createElement('button')
+      btn.textContent = 'Merge 2 images'
+      btn.style.marginRight = '0.5rem'
+      btn.addEventListener('click', async () => {
+        uploadBtn.disabled = true
+        message.textContent = 'Merging images...'
+        try {
+          localFile = await mergeImagesSideBySide(imageFiles)
+          message.textContent = 'Images merged. Ready to upload.'
+          uploadBtn.disabled = false
+        } catch (err) {
+          message.textContent = `Merge failed: ${err.message}`
+          uploadBtn.disabled = false
+        }
+      })
+      editControls.appendChild(btn)
+    }
+
+    if (pdfFiles.length === 1) {
+      const input = document.createElement('input')
+      input.type = 'number'
+      input.placeholder = 'Page # to remove'
+      input.min = '1'
+      input.style.marginRight = '0.5rem'
+      editControls.appendChild(input)
+
+      const btn = document.createElement('button')
+      btn.textContent = 'Remove page'
+      btn.addEventListener('click', async () => {
+        const pageNum = parseInt(input.value, 10)
+        if (!pageNum || pageNum < 1) {
+          message.textContent = 'Invalid page number'
+          return
+        }
+        uploadBtn.disabled = true
+        message.textContent = 'Removing page...'
+        try {
+          localFile = await removePdfPages(pdfFiles[0], [pageNum - 1])
+          message.textContent = 'PDF page removed. Ready to upload.'
+          uploadBtn.disabled = false
+        } catch (err) {
+          message.textContent = `Remove failed: ${err.message}`
+          uploadBtn.disabled = false
+        }
+      })
+      editControls.appendChild(btn)
+    }
+  }
+
+  filePicker.addEventListener('change', (e) => {
+    selectedFiles = Array.from(e.target.files)
+    if (!selectedFiles.length) return
+
+    localFile = selectedFiles[0]
+    const names = selectedFiles.map(f => f.name).join(', ')
+    const totalMB = (selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)
+    fileInfo.textContent = `Selected: ${names} (${totalMB} MB)`
     fileInfo.style.display = 'block'
     editSection.style.display = 'block'
     uploadBtn.disabled = false
-    message.textContent = 'File loaded locally. Edit if needed, then click Upload.'
+    message.textContent = 'File(s) loaded locally. Edit if needed, then click Upload.'
+    renderEditControls()
   })
 
   uploadBtn.addEventListener('click', async () => {
@@ -46,6 +108,7 @@ export function renderCustomerPage(container) {
       const result = await apiClient.uploadFile(localFile)
       message.textContent = `Uploaded: ${result.filename} (${result.id})`
       localFile = null
+      selectedFiles = []
       filePicker.value = ''
       fileInfo.style.display = 'none'
       editSection.style.display = 'none'
