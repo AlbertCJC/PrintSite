@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "dev": "cd packages/web && npm run dev",
-    "build": "cd packages/web && npm run build",
+    "build": "cd packages/web && npm run build && cp ../../dist/index.html ../../dist/404.html",
     "deploy": "vercel deploy --prod",
     "test": "vitest",
     "test:run": "vitest run"
