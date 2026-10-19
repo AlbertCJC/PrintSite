@@ -1,36 +1,32 @@
-const SUPABASE_URL = process.env.SUPABASE_URL!
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 const BUCKET = process.env.SUPABASE_BUCKET_NAME!
 
-const headers = {
-  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-  apikey: SERVICE_ROLE_KEY,
-}
-
 export default async function handler(req: Request): Promise<Response> {
-  const id = decodeURIComponent(req.url.split('/').pop() || '')
+  const id = req.url.split('/').pop()
 
   if (!id) {
     return new Response('Missing id', { status: 400 })
   }
 
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${id}`, {
-    headers,
-  })
+  const { data, error } = await supabase.storage.from(BUCKET).download(id)
 
-  if (!res.ok) {
-    const text = await res.text()
-    return new Response(text || `Download failed (${res.status})`, { status: res.status })
+  if (error || !data) {
+    return new Response(error?.message || 'Not found', { status: 500 })
   }
 
-  const sep = id.indexOf('__')
-  const downloadName = sep === -1 ? id : id.slice(sep + 1)
-  const body = await res.arrayBuffer()
+  const contentType = data.type || 'application/octet-stream'
+  const body = await data.arrayBuffer()
 
   return new Response(body, {
     headers: {
-      'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${downloadName}"`,
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${id}"`,
     },
   })
 }

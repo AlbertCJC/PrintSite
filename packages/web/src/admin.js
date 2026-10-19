@@ -4,7 +4,7 @@ export function renderAdminPage(container) {
   container.innerHTML = `
     <div class="admin-page">
       <h1>Admin — Uploads</h1>
-      <button id="refresh-btn">Refresh</button>
+      <button id="refresh-btn" class="btn btn-primary">Refresh</button>
       <table id="uploads-table" style="margin-top: 1rem; width: 100%; border-collapse: collapse;">
         <thead>
           <tr>
@@ -17,7 +17,7 @@ export function renderAdminPage(container) {
         </thead>
         <tbody id="uploads-tbody"></tbody>
       </table>
-      <div id="message" style="margin-top: 1rem;"></div>
+      <div id="message" class="message"></div>
     </div>
   `
 
@@ -41,10 +41,10 @@ export function renderAdminPage(container) {
           <td style="border-bottom: 1px solid #eee; padding: 0.5rem;">${new Date(upload.uploadedAt).toLocaleString()}</td>
           <td style="border-bottom: 1px solid #eee; padding: 0.5rem;">
             ${isImage
-              ? `<button class="convert-btn" data-id="${upload.id}">Convert to PDF</button>`
-              : `<a href="/api/admin/download/${encodeURIComponent(upload.id)}" target="_blank">Download</a>`}
-            <button class="print-btn" data-id="${upload.id}" ${!isImage ? 'disabled' : ''}>Print</button>
-            <button class="delete-btn" data-id="${upload.id}">Delete</button>
+              ? `<button class="convert-btn btn btn-primary" data-id="${upload.id}">Convert to PDF</button>`
+              : `<a href="/api/admin/download/${encodeURIComponent(upload.id)}" target="_blank" class="download-link">Download</a>`}
+            <button class="print-btn btn" data-id="${upload.id}" ${!isImage ? 'disabled' : ''}>Print</button>
+            <button class="delete-btn btn btn-danger" data-id="${upload.id}">Delete</button>
           </td>
         `
 

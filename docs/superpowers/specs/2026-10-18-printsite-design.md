@@ -2,11 +2,11 @@
 
 **Date:** 2026-10-18  
 **Status:** Approved  
-**Stack:** Vercel + Vite + monorepo + Cloudflare R2
+**Stack:** Vercel + Vite + monorepo + Supabase Storage
 
 ## 1. Overview
 
-PrintSite is a website where customers upload images or files anonymously, and an admin can view all uploads, convert images to PDF for printing, and delete uploads. The frontend is a Vite app deployed to Vercel. The backend uses Vercel serverless functions. Files are stored in Cloudflare R2.
+PrintSite is a website where customers upload images or files anonymously, and an admin can view all uploads, convert images to PDF for printing, and delete uploads. The frontend is a Vite app deployed to Vercel. The backend uses Vercel serverless functions. Files are stored in Supabase Storage.
 
 ## 2. Requirements
 
@@ -34,11 +34,11 @@ printsite/
 │   ├── web/          # Vite + vanilla JS frontend
 │   └── shared/       # Shared types/constants
 ├── api/
-│   ├── upload.ts     # POST — customer uploads to R2
+│   ├── upload.ts     # POST — customer uploads to Supabase Storage
 │   └── admin/
 │       ├── list.ts   # GET — list all uploads
 │       ├── convert.ts# POST — image → PDF via pdf-lib
-│       └── delete.ts # DELETE — remove from R2
+│       └── delete.ts # DELETE — remove from Supabase Storage
 ├── package.json      # root, npm workspaces
 ├── vercel.json       # Vercel config
 └── turbo.json        # monorepo task runner
@@ -47,12 +47,12 @@ printsite/
 ### Data flow
 1. Customer picks file → stored in browser memory (Blob)
 2. Customer edits locally (Canvas merge images, pdf-lib remove PDF pages)
-3. Customer clicks Upload → file sent to `POST /api/upload` → stored in R2
+3. Customer clicks Upload → file sent to `POST /api/upload` → stored in Supabase Storage
 4. Admin views list from `GET /api/admin/list`
-5. Admin clicks Convert (image only) → `POST /api/admin/convert` → server fetches image → pdf-lib → PDF stored in R2
+5. Admin clicks Convert (image only) → `POST /api/admin/convert` → server fetches image → pdf-lib → PDF stored in Supabase Storage
 6. Admin clicks Print → browser prints PDF
-7. Admin clicks Delete → `DELETE /api/admin/delete` → removed from R2
-8. Admin clicks Download (DOCX/other) → downloads original from R2
+7. Admin clicks Delete → `DELETE /api/admin/delete` → removed from Supabase Storage
+8. Admin clicks Download (DOCX/other) → downloads original from Supabase Storage
 
 ### Components
 
@@ -60,11 +60,11 @@ printsite/
 
 **Admin page** — upload list, per-item actions: Convert to PDF, Print, Delete, Download
 
-**API functions** — upload → R2; list → R2; convert → image→PDF via pdf-lib; delete → R2
+**API functions** — upload → Supabase Storage; list → Supabase Storage; convert → image→PDF via pdf-lib; delete → Supabase Storage
 
 ### Error handling
 - Upload failures (network, file too large, wrong type) → show error message
-- R2 failures → retry once, then show error
+- Supabase Storage failures → retry once, then show error
 - PDF conversion failure → show error, original file untouched
 
 ### Testing

@@ -5,14 +5,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "cd packages/web && npm run dev",
     "build": "cd packages/web && npm run build",
-    "deploy": "vercel deploy --prod"
+    "deploy": "vercel deploy --prod",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "devDependencies": {
-    "vercel": "^35.0.0"
+    "vercel": "^35.0.0",
+    "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "pdf-lib": "^1.17.1",
     "uuid": "^14.0.3"
   }

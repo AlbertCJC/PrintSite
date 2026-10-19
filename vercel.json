@@ -3,10 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "packages/dist",
   "framework": null,
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 10
-    }
-  }
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
 }

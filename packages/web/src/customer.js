@@ -12,13 +12,13 @@ export function renderCustomerPage(container) {
     <div class="customer-page">
       <h1>Upload File</h1>
       <input type="file" id="file-picker" multiple />
-      <div id="file-info" style="margin: 1rem 0; display: none;"></div>
-      <div id="edit-section" style="margin: 1rem 0; display: none;">
+      <div id="file-info" class="file-info" style="display: none;"></div>
+      <div id="edit-section" style="display: none;">
         <h2>Edit (optional)</h2>
         <div id="edit-controls"></div>
       </div>
-      <button id="upload-btn" disabled>Upload to Server</button>
-      <div id="message" style="margin-top: 1rem;"></div>
+      <button id="upload-btn" class="btn btn-primary" disabled>Upload to Server</button>
+      <div id="message" class="message"></div>
     </div>
   `
 

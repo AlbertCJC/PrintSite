@@ -1,36 +1,32 @@
+import { createClient } from '@supabase/supabase-js'
 import { PDFDocument } from 'pdf-lib'
 
-const SUPABASE_URL = process.env.SUPABASE_URL!
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const BUCKET = process.env.SUPABASE_BUCKET_NAME!
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-const headers = {
-  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-  apikey: SERVICE_ROLE_KEY,
-}
+const BUCKET = process.env.SUPABASE_BUCKET_NAME!
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const { id } = (await req.json()) as { id: string }
+  const { id } = await req.json() as { id: string }
 
   if (!id) {
     return new Response('Missing id', { status: 400 })
   }
 
   // Fetch original image from Supabase Storage
-  const getRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${id}`, {
-    headers,
-  })
+  const { data, error } = await supabase.storage.from(BUCKET).download(id)
 
-  if (!getRes.ok) {
-    const text = await getRes.text()
-    return new Response(text || `Fetch failed (${getRes.status})`, { status: getRes.status })
+  if (error || !data) {
+    return new Response(error?.message || 'Not found', { status: 500 })
   }
 
-  const imageBytes = new Uint8Array(await getRes.arrayBuffer())
+  const imageBytes = new Uint8Array(await data.arrayBuffer())
 
   // Convert image to PDF using pdf-lib
   const pdfDoc = await PDFDocument.create()
@@ -49,22 +45,20 @@ export default async function handler(req: Request): Promise<Response> {
   const pdfBytes = await pdfDoc.save()
   const pdfId = `${id}.pdf`
 
-  const putRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${pdfId}`, {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/pdf',
-    },
-    body: pdfBytes,
-  })
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(
+    pdfId,
+    pdfBytes,
+    {
+      contentType: 'application/pdf',
+    }
+  )
 
-  if (!putRes.ok) {
-    const text = await putRes.text()
-    return new Response(text || `Convert failed (${putRes.status})`, { status: putRes.status })
+  if (uploadError) {
+    return new Response(uploadError.message, { status: 500 })
   }
 
   return Response.json({
     id: pdfId,
-    pdfUrl: `/api/admin/download/${encodeURIComponent(pdfId)}`,
+    pdfUrl: `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${pdfId}`,
   })
 }

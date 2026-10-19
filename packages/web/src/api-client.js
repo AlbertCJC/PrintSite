@@ -1,5 +1,3 @@
-import { UploadResponse } from '@printsite/shared'
-
 const API_BASE = ''
 
 /**

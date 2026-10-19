@@ -1,45 +1,31 @@
-const SUPABASE_URL = process.env.SUPABASE_URL!
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const BUCKET = process.env.SUPABASE_BUCKET_NAME!
+import { createClient } from '@supabase/supabase-js'
 
-const headers = {
-  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-  apikey: SERVICE_ROLE_KEY,
-  'Content-Type': 'application/json',
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+const BUCKET = process.env.SUPABASE_BUCKET_NAME!
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'GET') {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } }),
-  })
+  const { data, error } = await supabase.storage.from(BUCKET).list()
 
-  if (!res.ok) {
-    const text = await res.text()
-    return new Response(text || `List failed (${res.status})`, { status: res.status })
+  if (error) {
+    return new Response(error.message, { status: 500 })
   }
 
-  const data = await res.json()
-  const objects = data.data || []
-
-  const uploads = objects.map((obj: any) => {
-    const path = obj.name
-    const sep = path.indexOf('__')
-    const filename = sep === -1 ? path : path.slice(sep + 1)
-    return {
-      id: path,
-      filename,
-      size: obj.metadata?.size || 0,
-      type: obj.metadata?.mimetype || 'application/octet-stream',
-      uploadedAt: obj.created_at || new Date().toISOString(),
-      url: `/api/admin/download/${encodeURIComponent(path)}`,
-    }
-  })
+  const uploads = (data || []).map((obj) => ({
+    id: obj.name,
+    filename: obj.name,
+    size: obj.size || 0,
+    type: obj.metadata?.mimetype || 'application/octet-stream',
+    uploadedAt: obj.created_at || new Date().toISOString(),
+    url: `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${obj.name}`,
+  }))
 
   return Response.json({ uploads })
 }
