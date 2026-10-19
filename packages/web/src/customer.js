@@ -104,8 +104,8 @@ export function renderCustomerPage(container) {
     uploadBtn.disabled = true
     message.textContent = 'Uploading...'
     try {
-      const { default: apiClient } = await import('./api-client.js')
-      const result = await apiClient.uploadFile(localFile)
+      const { uploadFile } = await import('./api-client.js')
+      const result = await uploadFile(localFile)
       message.textContent = `Uploaded: ${result.filename} (${result.id})`
       localFile = null
       selectedFiles = []
